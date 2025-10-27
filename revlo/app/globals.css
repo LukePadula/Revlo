@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.bg-brand {
+  background-color: #2563eb;
+}
+
+.bg-success {
+  background-color: #059669;
+}
+
+.bg-brand-light {
+  background-color: #e9effd;
+}
+
+.bg-brand-medium {
+  background-color: #5182ef;
+}
