@@ -1,6 +1,8 @@
 import DocumentIcon from "./icons/documentIcon";
 import Button from "./button";
 import { InputDocument } from "../types";
+import { dynamicIconImports } from "lucide-react/dynamic";
+type IconName = keyof typeof dynamicIconImports;
 
 interface props {
   inputDocuments: InputDocument[];
@@ -13,7 +15,7 @@ export default function DocumentUploadContainer({
 }: props) {
   const cameraEnabledInput = (
     <div>
-      <Button label="Choose File" variant="brand" iconName="upload" />
+      <Button label="Take Photo" variant="brand" iconName="camera" />
       <Button label="Choose File" variant="neutral" iconName="upload" />
     </div>
   );
@@ -29,7 +31,7 @@ export default function DocumentUploadContainer({
         <div key={item.label} className="w-full sm:w-1/2 p-2">
           <div className="border-dashed border-gray-300 border-2 p-3 flex flex-col justify-center items-center rounded aspect-3/2">
             <DocumentIcon
-              iconName={item.icon}
+              iconName={item.icon as IconName}
               colourVariant={item.colourVariant}
             />
             <h1 className="text-md font-semibold mt-2">{item.label}</h1>
@@ -37,7 +39,7 @@ export default function DocumentUploadContainer({
 
             {hasCamera ? cameraEnabledInput : cameraDisabledInput}
 
-            <small className="text-gray-500 mt-2">
+            <small className="text-gray-400 mt-2">
               PDF, JPG, PNG (Max 10MB)
             </small>
           </div>

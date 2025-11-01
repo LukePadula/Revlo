@@ -1,6 +1,6 @@
 export default function Checkbox() {
   return (
-    <label className="flex items-center space-x-2 cursor-pointer">
+    <label className="flex items-center space-x-2 cursor-pointer pt-8">
       <input
         type="checkbox"
         className="w-7 aspect-square accent-brand cursor-pointer"

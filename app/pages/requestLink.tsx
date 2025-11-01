@@ -23,6 +23,7 @@ export default function RequestLink() {
       },
       {
         type: "bankStatement",
+        icon: "landmark",
         required: true,
         label: "Bank Statement",
         description: "Latest Bank Statement",
@@ -30,6 +31,7 @@ export default function RequestLink() {
       },
       {
         type: "governmentId",
+        icon: "id-card",
         required: true,
         label: "Government ID",
         description: "Drivers licence or national ID",
@@ -40,7 +42,7 @@ export default function RequestLink() {
       status: "Pending",
       requestedBy: "Luke Padula",
       purpose: "Verify identity",
-      expires: "date",
+      expires: "48hr",
     },
     dataPolicy: { encrypt: true, autoDeletePeriod: "7 days", auditTrail: true },
     audit: { created: "dateTime", viewed: "dateTime", submitted: "dateTime" },
@@ -63,14 +65,15 @@ export default function RequestLink() {
           <PageCard
             icon={<Icon iconName="file-stack" variant="light" size="medium" />}
             title="Document Request"
+            headerVariant="neutral"
           >
             <div className="md:flex justify-between">
               <RequestDetailsList
                 title="Request Details"
                 items={[
-                  "Requested by: Luke Padula",
-                  "Purpose: Verify identity for rental agreement",
-                  "Expires: 48 hours",
+                  `Requested by: ${data.requestDetails.requestedBy}`,
+                  `Purpose:  ${data.requestDetails.purpose}`,
+                  `Expires: ${data.requestDetails.expires}`,
                 ]}
               />
               <RequestDetailsList
