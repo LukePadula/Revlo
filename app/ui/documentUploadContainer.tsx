@@ -1,4 +1,4 @@
-import DocumentIcon from "./icons/documentIcon";
+import DocumentIcon from "./documentIcon";
 import Button from "./button";
 import { InputDocument } from "../types";
 import { dynamicIconImports } from "lucide-react/dynamic";
