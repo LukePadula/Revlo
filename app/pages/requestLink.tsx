@@ -1,7 +1,7 @@
 "use client";
 import Nav from "../ui/nav";
 import PageCard from "../ui/pageCard";
-import Icon from "../ui/icons/icon";
+import Icon from "../ui/icon";
 import RequestDetailsList from "../ui/requestDetailsList";
 import DocumentUploadContainer from "../ui/documentUploadContainer";
 import SubmissionConfirmation from "../ui/submissionConfirmation";
