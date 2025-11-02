@@ -1,5 +1,5 @@
 import { DynamicIcon, dynamicIconImports } from "lucide-react/dynamic";
-import { ColourVariant } from "@/app/types";
+import { ColourVariant } from "@/types";
 type IconName = keyof typeof dynamicIconImports;
 
 interface props {
