@@ -6,9 +6,9 @@ import RequestDetailsList from "../ui/requestDetailsList";
 import DocumentUploadContainer from "../ui/documentUploadContainer";
 import SubmissionConfirmation from "../ui/submissionConfirmation";
 import { useEffect } from "react";
-import { InputDocument } from "../types";
+import { InputDocument } from "../../types";
 
-import detectCamera from "../utils/camera";
+import detectCamera from "../../utils/camera";
 
 export default function RequestLink() {
   const data = {

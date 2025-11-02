@@ -1,5 +1,5 @@
 import Image from "next/image";
-import RequestLink from "./requestLink/page";
+import RequestLink from "./components/requestLink/page";
 
 export default function Home() {
   return <RequestLink />;

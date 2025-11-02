@@ -1,6 +1,6 @@
 import DocumentIcon from "./documentIcon";
 import Button from "./button";
-import { InputDocument } from "../types";
+import { InputDocument } from "../../types";
 import { dynamicIconImports } from "lucide-react/dynamic";
 type IconName = keyof typeof dynamicIconImports;
 
