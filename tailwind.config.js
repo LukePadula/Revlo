@@ -6,7 +6,14 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        inter: ["var(--font-inter)"],
+        geist: ["var(--font-geist-sans)"],
+        geistMono: ["var(--font-geist-mono)"],
+      },
+      colors: { brand: "#6D28D9" },
+    },
   },
   plugins: [],
 };

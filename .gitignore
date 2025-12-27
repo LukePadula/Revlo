@@ -35,6 +35,10 @@ yarn-error.log*
 
 # vercel
 .vercel
+revlo.json
+serviceAccount.json
+firebaseServiceKey.json
+server/db/firebaseServiceKey.json
 
 # typescript
 *.tsbuildinfo
