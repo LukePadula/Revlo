@@ -91,6 +91,9 @@ export default function AccountClient({
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
+  const [showManageSubscription, setShowManageSubscription] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
   console.log(JSON.stringify(subscription), "SUBSCRIPTION");
 
@@ -173,11 +176,29 @@ export default function AccountClient({
     }
   };
 
+  const handleCancelSubscription = async () => {
+    if (!subscription) return;
+
+    setIsCanceling(true);
+    try {
+      const { cancelSubscription } = await import(
+        "@/app/actions/cancelSubscription"
+      );
+      await cancelSubscription(subscription.id);
+      setShowCancelConfirm(false);
+      // Refresh the page to show updated subscription status
+      window.location.reload();
+    } catch (error: any) {
+      alert(error.message || "Failed to cancel subscription");
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-gray-100/50">
-      <div className="w-full   pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full pb-12">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Tabs */}
           <div className="flex gap-2 border-b border-gray-200">
             <button
               onClick={() => setActiveTab("account")}
@@ -198,7 +219,7 @@ export default function AccountClient({
                     : "border-transparent text-gray-600 hover:text-gray-900"
                 }`}
               >
-                Organization
+                Organisation
               </button>
             )}
           </div>
@@ -353,7 +374,6 @@ export default function AccountClient({
               </PageCard>
             </>
           )}
-
           {activeTab === "organization" && isOwner && organization && (
             <>
               {/* Organization Settings */}
@@ -565,91 +585,24 @@ export default function AccountClient({
                         </div>
                       </div>
                     )}
+
+                    {!subscription.cancelAtPeriodEnd && (
+                      <div className="pt-4 border-t border-gray-200">
+                        <Button
+                          label="Manage Subscription"
+                          variant="outline"
+                          iconName="settings"
+                          size="medium"
+                          fullWidth
+                          onClick={() => setShowManageSubscription(true)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </PageCard>
               )}
 
-              {/* Invite User Section */}
-              <PageCard>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
-                        <UserPlus className="w-5 h-5 text-brand" />
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Invite Team Member
-                        </h2>
-                        <p className="text-sm text-gray-600">
-                          Add new members to your organization
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {inviteError && (
-                    <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                      <p className="text-sm text-red-800">{inviteError}</p>
-                    </div>
-                  )}
-
-                  {inviteSuccess && (
-                    <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                      <p className="text-sm text-green-800">{inviteSuccess}</p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Mail className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="email"
-                          value={inviteEmail}
-                          onChange={(e) => {
-                            setInviteEmail(e.target.value);
-                            setInviteError("");
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              handleInviteUser();
-                            }
-                          }}
-                          placeholder="Enter email address"
-                          className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-colors text-sm"
-                          disabled={isInviting}
-                        />
-                      </div>
-                    </div>
-                    <select
-                      value={inviteRole}
-                      onChange={(e) =>
-                        setInviteRole(e.target.value as "admin" | "member")
-                      }
-                      className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-sm"
-                      disabled={isInviting}
-                    >
-                      <option value="member">Member</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <Button
-                      label={isInviting ? "Inviting..." : "Invite"}
-                      variant="brand"
-                      size="small"
-                      onClick={handleInviteUser}
-                      disabled={isInviting || !inviteEmail.trim()}
-                      loading={isInviting}
-                    />
-                  </div>
-                </div>
-              </PageCard>
-
-              {/* Members Management */}
+              {/* Team Members Management */}
               <PageCard>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between pb-4 border-b border-gray-200">
@@ -663,78 +616,387 @@ export default function AccountClient({
                         </h2>
                         <p className="text-sm text-gray-600">
                           {members.length} member
-                          {members.length !== 1 ? "s" : ""}
+                          {members.length !== 1 ? "s" : ""} · Add new members to
+                          your organization
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {members.map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center">
-                            <User className="w-5 h-5 text-brand" />
+                  {/* Invite User Section */}
+                  <div className="space-y-4">
+                    {inviteError && (
+                      <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-800">{inviteError}</p>
+                      </div>
+                    )}
+
+                    {inviteSuccess && (
+                      <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                        <p className="text-sm text-green-800">
+                          {inviteSuccess}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Mail className="h-5 w-5 text-gray-400" />
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {member.user.name || member.user.email}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              {member.user.email}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {member.role === "owner" && (
-                            <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
-                              <Crown className="w-3 h-3" />
-                              Owner
-                            </span>
-                          )}
-                          {member.role === "admin" && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
-                              Admin
-                            </span>
-                          )}
-                          {member.role === "member" && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded">
-                              Member
-                            </span>
-                          )}
-                          {member.role !== "owner" && (
-                            <select
-                              value={member.role}
-                              onChange={(e) =>
-                                handleUpdateRole(
-                                  member.userId,
-                                  e.target.value as "owner" | "admin" | "member"
-                                )
+                          <input
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => {
+                              setInviteEmail(e.target.value);
+                              setInviteError("");
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                handleInviteUser();
                               }
-                              className="text-xs border border-gray-300 rounded px-2 py-1"
-                            >
-                              <option value="member">Member</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                          )}
-                          {member.role !== "owner" && (
-                            <button
-                              onClick={() => handleRemoveMember(member.userId)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                            }}
+                            placeholder="Enter email address"
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-colors text-sm"
+                            disabled={isInviting}
+                          />
                         </div>
                       </div>
-                    ))}
+                      <select
+                        value={inviteRole}
+                        onChange={(e) =>
+                          setInviteRole(e.target.value as "admin" | "member")
+                        }
+                        className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-sm"
+                        disabled={isInviting}
+                      >
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <Button
+                        label={isInviting ? "Inviting..." : "Invite"}
+                        variant="brand"
+                        size="small"
+                        onClick={handleInviteUser}
+                        disabled={isInviting || !inviteEmail.trim()}
+                        loading={isInviting}
+                      />
+                    </div>
                   </div>
+
+                  {/* Members List */}
+                  {members.length > 0 && (
+                    <>
+                      <div className="pt-4 border-t border-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                          Current Members
+                        </h3>
+                        <div className="space-y-3">
+                          {members.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center">
+                                  <User className="w-5 h-5 text-brand" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {member.user.name || member.user.email}
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    {member.user.email}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {member.role === "owner" && (
+                                  <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
+                                    <Crown className="w-3 h-3" />
+                                    Owner
+                                  </span>
+                                )}
+                                {member.role === "admin" && (
+                                  <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
+                                    Admin
+                                  </span>
+                                )}
+                                {member.role === "member" && (
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded">
+                                    Member
+                                  </span>
+                                )}
+                                {member.role !== "owner" && (
+                                  <select
+                                    value={member.role}
+                                    onChange={(e) =>
+                                      handleUpdateRole(
+                                        member.userId,
+                                        e.target.value as
+                                          | "owner"
+                                          | "admin"
+                                          | "member"
+                                      )
+                                    }
+                                    className="text-xs border border-gray-300 rounded px-2 py-1"
+                                  >
+                                    <option value="member">Member</option>
+                                    <option value="admin">Admin</option>
+                                  </select>
+                                )}
+                                {member.role !== "owner" && (
+                                  <button
+                                    onClick={() =>
+                                      handleRemoveMember(member.userId)
+                                    }
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </PageCard>
             </>
+          )}
+
+          {/* Manage Subscription Modal */}
+          {showManageSubscription && subscription && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div
+                className="w-full max-w-lg mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <PageCard>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-brand" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900">
+                            Manage Subscription
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            View and manage your subscription details
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowManageSubscription(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700">
+                            Subscription Status
+                          </span>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded ${
+                              subscription.status === "active" ||
+                              subscription.status === "trialing"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {subscription.status === "trialing"
+                              ? "Trial"
+                              : subscription.status.charAt(0).toUpperCase() +
+                                subscription.status.slice(1)}
+                          </span>
+                        </div>
+                        {subscription.price && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">
+                                Current Plan
+                              </span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                £{subscription.price.amount}/
+                                {subscription.price.interval}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-sm text-gray-600">
+                                Licenses
+                              </span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {subscription.quantity}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-sm text-gray-600">
+                                Total
+                              </span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                £
+                                {subscription.price.amount *
+                                  subscription.quantity}
+                                /{subscription.price.interval}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">
+                              Next Billing Date
+                            </span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(
+                                subscription.currentPeriodEnd
+                              ).toLocaleDateString("en-US", {
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          {subscription.trialEnd &&
+                            subscription.trialEnd > Date.now() && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">
+                                  Trial Ends
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {new Date(
+                                    subscription.trialEnd
+                                  ).toLocaleDateString("en-US", {
+                                    month: "long",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                        </div>
+                      </div>
+
+                      {!subscription.cancelAtPeriodEnd && (
+                        <div className="pt-4 border-t border-gray-200">
+                          <Button
+                            label="Cancel Subscription"
+                            variant="danger"
+                            iconName="x-circle"
+                            size="medium"
+                            fullWidth
+                            onClick={() => {
+                              setShowManageSubscription(false);
+                              setShowCancelConfirm(true);
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {subscription.cancelAtPeriodEnd && (
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-yellow-600" />
+                            <div>
+                              <p className="text-sm font-medium text-yellow-900">
+                                Subscription Cancelled
+                              </p>
+                              <p className="text-xs text-yellow-700 mt-1">
+                                Your subscription will end on{" "}
+                                {new Date(
+                                  subscription.currentPeriodEnd
+                                ).toLocaleDateString("en-US", {
+                                  month: "long",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </PageCard>
+              </div>
+            </div>
+          )}
+
+          {/* Cancel Subscription Confirmation Modal */}
+          {showCancelConfirm && subscription && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div
+                className="w-full max-w-md mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <PageCard>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                        <AlertCircle className="w-6 h-6 text-red-600" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Cancel Subscription
+                        </h2>
+                        <p className="text-sm text-gray-600">
+                          Are you sure you want to cancel?
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-900">
+                        Your subscription will remain active until{" "}
+                        {new Date(
+                          subscription.currentPeriodEnd
+                        ).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                        . You will continue to have access to all features until
+                        then.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        label="No, Keep Subscription"
+                        variant="outline"
+                        size="medium"
+                        fullWidth
+                        onClick={() => setShowCancelConfirm(false)}
+                        disabled={isCanceling}
+                      />
+                      <Button
+                        label={isCanceling ? "Canceling..." : "Yes, Cancel"}
+                        variant="danger"
+                        size="medium"
+                        fullWidth
+                        onClick={handleCancelSubscription}
+                        disabled={isCanceling}
+                        loading={isCanceling}
+                      />
+                    </div>
+                  </div>
+                </PageCard>
+              </div>
+            </div>
           )}
         </div>
       </div>

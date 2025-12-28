@@ -6,6 +6,8 @@ import { Mail, Lock, User, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import Logo from "@/app/landing/Logo.png";
+import { authClient } from "@/app/lib/auth-client";
+import { createOrganization } from "../actions/createOrganization";
 
 type RegistrationStep = "form" | "licenses" | "payment";
 
@@ -53,47 +55,51 @@ export default function RegisterPage() {
     return true;
   };
 
+  // Replace your old handleSubmit with this simplified version
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
-      const { signUp } = await import("@/app/actions/signUp");
-      const result = await signUp(
-        formData.name,
-        formData.email,
-        formData.password,
-        formData.organizationName
-      );
+      const result = await createOrganization({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        organizationName: formData.organizationName,
+      });
 
-      // After successful signup, sign the user in automatically
-      if (result.success) {
-        // Sign in the user so they can access the license selection screen
-        const { signIn } = await import("@/app/actions/signIn");
-        await signIn(formData.email, formData.password);
-
-        // Create organization for the user
-        try {
-          const { createOrganization } = await import(
-            "@/app/actions/createOrganization"
-          );
-          await createOrganization(formData.organizationName);
-        } catch (orgError: any) {
-          console.error("Failed to create organization:", orgError);
-          // Continue anyway - organization can be created later
-        }
-
-        // Move to license selection step
-        setStep("licenses");
+      if (!result.success) {
+        throw new Error(result.error);
       }
+
+      // 2. IMPORTANT: Even though the user is in the DB,
+      // the browser needs a session cookie.
+      // Use Better-Auth's signIn to get the cookie.
+      const loginRes = await authClient.signIn.email({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (loginRes.error) {
+        throw new Error(
+          "Account created, but failed to sign in automatically."
+        );
+      }
+
+      // 3. Set the active organization for the session
+      if (result.organisation?.id) {
+        await authClient.organization.setActive({
+          organizationId: result.organisation.id,
+        });
+      }
+
+      // 4. Move to next step
+      setStep("licenses");
     } catch (err: any) {
-      setError(err.message || "An error occurred. Please try again.");
+      setError(err.message || "An error occurred.");
     } finally {
       setIsLoading(false);
     }

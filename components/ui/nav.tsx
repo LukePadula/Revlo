@@ -2,7 +2,7 @@
 import Logo from "../../app/landing/Logo.png";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Home } from "lucide-react";
 import { signOut } from "@/app/actions/signOut";
 import { useState } from "react";
 
@@ -47,6 +47,15 @@ export default function Nav() {
         </button>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/portal/dashboard")}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+            aria-label="Go to dashboard"
+          >
+            <Home className="w-4 h-4" />
+            <span>Home</span>
+          </button>
+
           <button
             onClick={() => router.push("/portal/account")}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"

@@ -6,7 +6,7 @@ interface Props {
 
 export default function PageHeader({ title, subtitle, children }: Props) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between mt-6">
       <div>
         <h1 className="font-bold text-xl">{title}</h1>
         {subtitle && (

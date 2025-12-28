@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import PageCard from "../core/pageCard";
 import Icon from "../core/icon";
 import { RequestDetails, Recipient } from "@/types";
@@ -11,6 +11,10 @@ interface Props {
   errors?: Record<string, string>;
 }
 
+interface RecipientWithId extends Recipient {
+  id: string;
+}
+
 export default function ModifyRequestDetails({
   requestDetails,
   errors,
@@ -18,44 +22,77 @@ export default function ModifyRequestDetails({
   const updateRequestDetails = useModifyRequestStore(
     (s) => s.updateRequestDetails
   );
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [recipients, setRecipients] = useState<Recipient[]>(() => {
+  const [recipients, setRecipients] = useState<RecipientWithId[]>(() => {
     if (requestDetails.recipients && requestDetails.recipients.length > 0) {
-      return requestDetails.recipients;
+      return requestDetails.recipients.map((r, i) => ({
+        ...r,
+        id: `recipient-${Date.now()}-${i}`,
+      }));
     }
     if (requestDetails.recipientName && requestDetails.email) {
       return [
-        { name: requestDetails.recipientName, email: requestDetails.email },
+        {
+          name: requestDetails.recipientName,
+          email: requestDetails.email,
+          id: `recipient-${Date.now()}-0`,
+        },
       ];
     }
-    return [{ name: "", email: "" }];
+    return [{ name: "", email: "", id: `recipient-${Date.now()}-0` }];
   });
 
-  // Sync recipients to store whenever they change
+  // Debounced sync to store to prevent focus loss
   useEffect(() => {
-    updateRequestDetails("recipients", recipients);
+    // Clear any pending sync
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    // Debounce the store update
+    syncTimeoutRef.current = setTimeout(() => {
+      const recipientsWithoutId = recipients.map(({ id, ...rest }) => rest);
+      updateRequestDetails("recipients", recipientsWithoutId);
+    }, 100);
+
+    // Cleanup on unmount or when recipients change
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipients]);
 
-  const addRecipient = () => {
-    setRecipients([...recipients, { name: "", email: "" }]);
-  };
+  const addRecipient = useCallback(() => {
+    setRecipients([
+      ...recipients,
+      {
+        name: "",
+        email: "",
+        id: `recipient-${Date.now()}-${recipients.length}`,
+      },
+    ]);
+  }, [recipients]);
 
-  const removeRecipient = (index: number) => {
-    if (recipients.length > 1) {
-      setRecipients(recipients.filter((_, i) => i !== index));
-    }
-  };
+  const removeRecipient = useCallback(
+    (id: string) => {
+      if (recipients.length > 1) {
+        setRecipients(recipients.filter((r) => r.id !== id));
+      }
+    },
+    [recipients]
+  );
 
-  const updateRecipient = (
-    index: number,
-    field: keyof Recipient,
-    value: string
-  ) => {
-    const updated = [...recipients];
-    updated[index] = { ...updated[index], [field]: value };
-    setRecipients(updated);
-  };
+  const updateRecipient = useCallback(
+    (id: string, field: keyof Recipient, value: string) => {
+      setRecipients((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+      );
+    },
+    []
+  );
 
   return (
     <PageCard
@@ -165,7 +202,7 @@ export default function ModifyRequestDetails({
           <div className="space-y-4">
             {recipients.map((recipient, index) => (
               <div
-                key={`recipient-${index}-${recipient.email || index}`}
+                key={recipient.id}
                 className="p-4 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
@@ -179,7 +216,7 @@ export default function ModifyRequestDetails({
                   </div>
                   {recipients.length > 1 && (
                     <button
-                      onClick={() => removeRecipient(index)}
+                      onClick={() => removeRecipient(recipient.id)}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                       type="button"
                       aria-label="Remove recipient"
@@ -208,7 +245,7 @@ export default function ModifyRequestDetails({
                       }`}
                       required
                       onChange={(e) =>
-                        updateRecipient(index, "name", e.target.value)
+                        updateRecipient(recipient.id, "name", e.target.value)
                       }
                     />
                     {(errors?.[`recipientName_${index}`] ||
@@ -237,7 +274,7 @@ export default function ModifyRequestDetails({
                       }`}
                       required
                       onChange={(e) =>
-                        updateRecipient(index, "email", e.target.value)
+                        updateRecipient(recipient.id, "email", e.target.value)
                       }
                     />
                     {(errors?.[`email_${index}`] ||

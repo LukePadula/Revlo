@@ -3,6 +3,8 @@
 import { adminDB } from "../lib/firebase/admin";
 import { DocumentRequest } from "@/types";
 import { Timestamp } from "firebase-admin/firestore";
+import { auth } from "@/app/lib/auth";
+import { headers } from "next/headers";
 
 function serializeTimestamp(timestamp: any): string | null {
   if (!timestamp) return null;
@@ -60,13 +62,25 @@ function serializeRequestRecord(record: any): DocumentRequest {
 }
 
 export async function getRequests(userId: string): Promise<DocumentRequest[]> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new Error("Unauthorised");
+  }
+
+  const orgId = session.session.activeOrganizationId;
+  if (!orgId) {
+    throw new Error("No organization found");
+  }
+
   try {
     const snapshot = await adminDB
       .collection("requests")
-      .where("requestDetails.createdBy", "==", userId)
+      .where("organizationId", "==", orgId)
       .get();
 
-    console.log("Snapshot", snapshot);
     if (snapshot.docs.length === 0) {
       return [];
     }

@@ -54,26 +54,26 @@ export const categoryTemplateData: DocumentCategoryMap = {
       { id: "credit_report", label: "Credit Report", selected: false },
     ],
   },
-  education: {
-    title: "Education",
-    description: "Academic credentials",
-    requiredType: "all",
-    minimumRequiredDocumentCount: 1,
-    selected: false,
-    requestedDocumentList: [
-      {
-        id: "degree_certificate",
-        label: "Degree Certificate",
-        selected: false,
-      },
-      { id: "transcript", label: "Transcript", selected: false },
-      {
-        id: "qualification_certificate",
-        label: "Qualification Certificate",
-        selected: false,
-      },
-    ],
-  },
+  // education: {
+  //   title: "Education",
+  //   description: "Academic credentials",
+  //   requiredType: "all",
+  //   minimumRequiredDocumentCount: 1,
+  //   selected: false,
+  //   requestedDocumentList: [
+  //     {
+  //       id: "degree_certificate",
+  //       label: "Degree Certificate",
+  //       selected: false,
+  //     },
+  //     { id: "transcript", label: "Transcript", selected: false },
+  //     {
+  //       id: "qualification_certificate",
+  //       label: "Qualification Certificate",
+  //       selected: false,
+  //     },
+  //   ],
+  // },
 };
 
 export const iconConfig: iconConfigMap = {

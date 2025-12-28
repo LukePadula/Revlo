@@ -84,6 +84,8 @@ export interface Audit {
 
 export interface DocumentRequest {
   id: string | null;
+  organizationId: string;
+  createdBy: string;
   requestedCategories: DocumentCategoryMap;
   requestDetails: RequestDetails;
   dataPolicy: DataPolicy;

@@ -6,6 +6,7 @@ import PageHeader from "@/components/ui/core/PageHeader";
 import AccountClient from "./AccountClient";
 import { getOrganization } from "@/app/actions/getOrganization";
 import { getSubscription } from "@/app/actions/getSubscription";
+import { log } from "node:console";
 
 export default async function AccountPage() {
   const headerList = await headers();
@@ -18,8 +19,7 @@ export default async function AccountPage() {
     redirect("/login");
   }
 
-  // Fetch account info
-  const accountInfo = {
+  const userInfo = {
     name: session.user.name || "User",
     email: session.user.email,
     memberSince: session.user.createdAt
@@ -30,82 +30,43 @@ export default async function AccountPage() {
       : "Recently",
   };
 
-  // Fetch organization and subscription
-  const orgData = await getOrganization().catch((err) => {
+  let orgData = null;
+  try {
+    orgData = await getOrganization();
+  } catch (err) {
     console.error("Error fetching organization:", err);
-    return null;
-  });
-  const subscription = await getSubscription().catch(() => null);
-  console.log(JSON.stringify(subscription), "SUBSCRIPTION");
-  // Check if user is owner
-  // Try multiple ways to check ownership since the member structure might vary
-  let isOwner = false;
-
-  if (orgData?.organization) {
-    // Method 1: Check members list for owner role
-    if (orgData.members && orgData.members.length > 0) {
-      isOwner = orgData.members.some((m: any) => {
-        // Check both userId and user.id fields
-        const memberUserId = m.userId || m.user?.id;
-        const isMatch = memberUserId === session.user.id;
-        const isOwnerRole = m.role === "owner";
-
-        if (isMatch && isOwnerRole) {
-          console.log("✅ Found owner match:", {
-            member: m,
-            userId: session.user.id,
-            memberUserId,
-            role: m.role,
-          });
-        }
-
-        return isMatch && isOwnerRole;
-      });
-    }
-
-    // Method 2: If no members found or user not in members, check if user created the organization
-    // (organization creator is typically the owner)
-    if (!isOwner) {
-      const org = orgData.organization as any;
-      if (
-        org.createdBy === session.user.id ||
-        org.createdById === session.user.id
-      ) {
-        isOwner = true;
-        console.log("✅ User is organization creator (owner)");
-      }
-    }
-
-    // Method 3: If user is the only member or organization exists, assume owner for now
-    // This is a fallback - in production you'd want stricter checks
-    if (!isOwner && orgData.members && orgData.members.length === 1) {
-      const member = orgData.members[0] as any;
-      const memberUserId = member.userId || member.user?.id;
-      if (memberUserId === session.user.id) {
-        isOwner = true;
-        console.log("✅ User is the only member (assuming owner)");
-      }
-    }
   }
 
-  // Debug logging
-  console.log("🔍 Organization ownership check:", {
-    hasOrg: !!orgData,
-    orgId: orgData?.organization?.id,
-    orgCreatedBy: (orgData?.organization as any)?.createdBy,
-    orgCreatedById: (orgData?.organization as any)?.createdById,
-    memberCount: orgData?.members?.length || 0,
-    currentUserId: session.user.id,
-    members: orgData?.members?.map((m: any) => ({
-      id: m.id,
-      userId: m.userId,
-      user: m.user,
-      role: m.role,
-      memberUserId: m.userId || m.user?.id,
-      matchesCurrentUser: (m.userId || m.user?.id) === session.user.id,
-    })),
-    isOwner,
-  });
+  let isOwner = orgData?.organization.id === session.user.id;
+
+  console.log(isOwner, "IS OWNER");
+  console.log(orgData, "ID");
+
+  if (
+    orgData?.members &&
+    Array.isArray(orgData.members) &&
+    orgData.members.length > 0
+  ) {
+    const currentUserMember = orgData.members.find(
+      (member: any) =>
+        member.userId === session.user.id ||
+        member.user?.id === session.user.id ||
+        (member.user &&
+          typeof member.user === "object" &&
+          member.user.id === session.user.id)
+    );
+    isOwner = currentUserMember?.role === "owner";
+  }
+
+  // Also check if user has an organizationId (they belong to an org)
+  const hasOrganization =
+    !!(session.user as any).organisationId || !!orgData?.organization;
+
+  // Fetch subscription if user is owner or has organization
+  let subscription = null;
+  if (hasOrganization) {
+    subscription = await getSubscription().catch(() => null);
+  }
 
   return (
     <>
@@ -118,9 +79,33 @@ export default async function AccountPage() {
               subtitle="Manage your account settings and subscription"
             />
             <AccountClient
-              accountInfo={accountInfo}
-              subscription={subscription}
-              organization={orgData?.organization || null}
+              accountInfo={userInfo}
+              subscription={
+                subscription
+                  ? {
+                      ...subscription,
+                      trialEnd:
+                        subscription.trialEnd instanceof Date
+                          ? subscription.trialEnd.getTime()
+                          : subscription.trialEnd,
+                    }
+                  : null
+              }
+              organization={
+                orgData?.organization
+                  ? {
+                      id: orgData.organization.id,
+                      name: (orgData.organization as any).name || "",
+                      slug: (orgData.organization as any).slug || "",
+                      createdAt: (orgData.organization as any).createdAt
+                        ? new Date((orgData.organization as any).createdAt)
+                        : new Date(),
+                      updatedAt: (orgData.organization as any).updatedAt
+                        ? new Date((orgData.organization as any).updatedAt)
+                        : new Date(),
+                    }
+                  : null
+              }
               members={orgData?.members || []}
               isOwner={isOwner}
             />

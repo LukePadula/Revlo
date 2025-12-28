@@ -5,6 +5,8 @@ import { adminDB } from "../lib/firebase/admin";
 import { DocumentRequest } from "@/types";
 import * as admin from "firebase-admin";
 import { sendRequestLinkEmail } from "@/server/email/send";
+import { headers } from "next/headers";
+import { auth } from "../lib/auth";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL ||
@@ -16,8 +18,23 @@ export async function createNewRequest(
   requestDetails: RequestDetails,
   categories: DocumentCategoryMap
 ) {
-  const data: DocumentRequest = {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const orgId = session.session.activeOrganizationId;
+  if (!orgId) {
+    throw new Error("No organization found");
+  }
+
+  const newRequest: DocumentRequest = {
     id: null,
+    organizationId: orgId,
+    createdBy: session.user.id,
     requestDetails: requestDetails,
     requestedCategories: categories,
     dataPolicy: { encrypt: true, autoDeletePeriod: "30", auditTrail: true },
@@ -29,7 +46,7 @@ export async function createNewRequest(
   };
 
   const docRef = await adminDB.collection("requests").add({
-    ...data,
+    ...newRequest,
   });
 
   const requestId = docRef.id;
