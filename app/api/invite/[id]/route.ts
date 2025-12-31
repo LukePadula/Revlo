@@ -3,14 +3,9 @@ import { headers } from "next/headers";
 import { auth } from "@/app/lib/auth";
 import { adminDB } from "@/app/lib/firebase/admin";
 
-// Define the context type for Next.js 15/16
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
 export async function POST(
   request: NextRequest,
-  context: RouteContext // params is now a Promise
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Await the params to get the ID
